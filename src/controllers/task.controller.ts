@@ -33,10 +33,13 @@ const createTask = async (req: Request, res: Response) => {
       email,
     });
 
-    res.status(201).json({
-      success: true,
-      data: id,
-    });
+    res
+      .status(201)
+      .json({
+        success: true,
+        data: id,
+      })
+      .end();
   } catch (error) {
     console.error("Error creating task:", error);
     res.status(500).json({
@@ -54,10 +57,13 @@ const getTasks = async (req: Request, res: Response) => {
       { email: 0, _id: 0, createdAt: 0, updatedAt: 0 }
     );
 
-    res.status(200).json({
-      success: true,
-      data: tasks,
-    });
+    res
+      .status(200)
+      .json({
+        success: true,
+        data: tasks,
+      })
+      .end();
   } catch (error) {
     console.error("Error fetching tasks:", error);
     res.status(500).json({
@@ -73,17 +79,21 @@ const getTaskById = async (req: Request, res: Response) => {
 
     const task = await Task.findOne({ id });
 
-    if (!task) {
+    if (task === null) {
       res.status(404).json({
         success: false,
         message: "Task not found",
       });
+      return;
     }
 
-    res.status(200).json({
-      success: true,
-      data: task,
-    });
+    res
+      .status(200)
+      .json({
+        success: true,
+        data: task,
+      })
+      .end();
   } catch (error) {
     console.error("Error fetching task:", error);
     res.status(500).json({
@@ -117,12 +127,16 @@ const updateTask = async (req: Request, res: Response) => {
         success: false,
         message: "Task not found",
       });
+      return;
     }
 
-    res.status(200).json({
-      success: true,
-      data: id,
-    });
+    res
+      .status(200)
+      .json({
+        success: true,
+        data: id,
+      })
+      .end();
   } catch (error) {
     console.error("Error updating task:", error);
 
@@ -144,13 +158,17 @@ const deleteTask = async (req: Request, res: Response) => {
         success: false,
         message: "Task not found",
       });
+      return;
     }
 
-    res.status(200).json({
-      success: true,
-      message: "Task deleted successfully",
-      data: deletedTask,
-    });
+    res
+      .status(200)
+      .json({
+        success: true,
+        message: "Task deleted successfully",
+        data: deletedTask,
+      })
+      .end();
   } catch (error) {
     console.error("Error deleting task:", error);
     res.status(500).json({

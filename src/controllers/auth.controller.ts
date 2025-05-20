@@ -12,6 +12,8 @@ const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET!;
 const ACCESS_TOKEN_EXPIRY = "15m";
 const REFRESH_TOKEN_EXPIRY = "7d";
 
+const isProduction = process.env.NODE_ENV === "production";
+
 const refreshToken = async (
   req: Request,
   res: Response,
@@ -22,6 +24,7 @@ const refreshToken = async (
 
     if (!refreshToken) {
       res.status(401).json({ message: "Refresh token not found" });
+      return;
     }
 
     // Verify the refresh token
@@ -34,6 +37,7 @@ const refreshToken = async (
 
     if (user === null) {
       res.status(403).json({ message: "Invalid refresh token" });
+      return;
     }
 
     const newAccessToken = generateAccessToken({ email: decoded.email });
@@ -43,6 +47,7 @@ const refreshToken = async (
   } catch (error) {
     if (error instanceof jwt.TokenExpiredError) {
       res.status(401).json({ message: "Refresh token expired" });
+      return;
     }
 
     console.error("Token refresh error:", error);
@@ -69,8 +74,9 @@ const setAccessRefreshTokenCookie = (
 ): void => {
   res.cookie(tokenType, token, {
     httpOnly: true,
-    secure: true,
-    sameSite: "lax",
+    secure: isProduction,
+    sameSite: "strict",
+    path: "/",
     maxAge:
       tokenType === "accessToken" ? 15 * 60 * 1000 : 7 * 24 * 60 * 60 * 1000,
   });
@@ -83,6 +89,7 @@ const register = async (req: Request, res: Response) => {
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       res.status(409).json({ message: "User with this email already exists" });
+      return;
     }
 
     const hashedPassword = await bcrypt.hash(password, 12);
@@ -101,15 +108,18 @@ const register = async (req: Request, res: Response) => {
     setAccessRefreshTokenCookie(res, accessToken, "accessToken");
     setAccessRefreshTokenCookie(res, refreshToken, "refreshToken");
 
-    res.status(201).json({
-      message: "User registered successfully",
-      user: {
-        id: newUser._id.toString(),
-        username: newUser.username,
-        email: newUser.email,
-      },
-      accessToken,
-    });
+    res
+      .status(201)
+      .json({
+        message: "User registered successfully",
+        user: {
+          id: newUser._id.toString(),
+          username: newUser.username,
+          email: newUser.email,
+        },
+        accessToken,
+      })
+      .end();
   } catch (error) {
     console.error("Registration error:", error);
     res.status(500).json({ message: "Internal server error" });
@@ -123,19 +133,24 @@ const login = async (req: Request, res: Response) => {
     const user = await User.findOne({ email });
     if (user === null) {
       res.status(401).json({ message: "Invalid credentials" });
-    } else {
-      const isPasswordValid = await bcrypt.compare(password, user.password);
-      if (!isPasswordValid) {
-        res.status(401).json({ message: "Invalid credentials" });
-      }
+      return;
+    }
 
-      const accessToken = generateAccessToken({ email: user.email });
-      const refreshToken = generateRefreshToken({ email: user.email });
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      res.status(401).json({ message: "Invalid credentials" });
+      return;
+    }
 
-      setAccessRefreshTokenCookie(res, accessToken, "accessToken");
-      setAccessRefreshTokenCookie(res, refreshToken, "refreshToken");
+    const accessToken = generateAccessToken({ email: user.email });
+    const refreshToken = generateRefreshToken({ email: user.email });
 
-      res.status(200).json({
+    setAccessRefreshTokenCookie(res, accessToken, "accessToken");
+    setAccessRefreshTokenCookie(res, refreshToken, "refreshToken");
+
+    res
+      .status(200)
+      .json({
         message: "Login successful",
         user: {
           id: user._id.toString(),
@@ -143,8 +158,8 @@ const login = async (req: Request, res: Response) => {
           email: user.email,
         },
         accessToken,
-      });
-    }
+      })
+      .end();
   } catch (error) {
     console.error("Login error:", error);
     res.status(500).json({ message: "Internal server error" });
@@ -155,21 +170,15 @@ const logout = async (req: Request, res: Response) => {
   try {
     const userEmail = (req as any).user?.email;
 
-    if (!userEmail) res.status(404).json({ message: "User not found" });
+    if (userEmail === undefined) {
+      res.status(404).json({ message: "User not found" });
+      return;
+    }
 
-    res.clearCookie("accessToken", {
-      httpOnly: true,
-      secure: true,
-      sameSite: "lax",
-    });
+    res.clearCookie("accessToken");
+    res.clearCookie("refreshToken");
 
-    res.clearCookie("refreshToken", {
-      httpOnly: true,
-      secure: true,
-      sameSite: "lax",
-    });
-
-    res.status(200).json({ message: "Logout successful" });
+    res.status(200).json({ message: "Logout successful" }).end();
   } catch (error) {
     console.error("Logout error:", error);
     res.status(500).json({ message: "Internal server error" });

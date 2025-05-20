@@ -77,8 +77,9 @@ export const validateLogin = (
       res.status(400).json({
         message: "Invalid credientials",
       });
+      return;
     }
 
-    res.status(400).json({ message: "Invalid input data" });
+    res.status(400).json({ message: "Invalid input data" }).end();
   }
 };
