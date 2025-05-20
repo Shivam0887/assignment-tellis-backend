@@ -10,8 +10,6 @@ const app = express();
 
 ConnectToDB();
 
-app.set("trust proxy", 1);
-
 app.use(cookieParser());
 app.use(
   cors({

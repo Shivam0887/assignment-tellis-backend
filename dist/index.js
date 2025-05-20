@@ -7,7 +7,6 @@ import { errorHandler } from "./middlewares/error-handler.middleware.js";
 import { ConnectToDB } from "./configs/database.js";
 const app = express();
 ConnectToDB();
-app.set("trust proxy", 1);
 app.use(cookieParser());
 app.use(cors({
     origin: process.env.CORS_ORIGIN,
