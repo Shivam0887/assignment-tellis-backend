@@ -24,10 +24,14 @@ const createTask = async (req, res) => {
             assignee,
             email,
         });
-        res.status(201).json({
+        await newTask.save();
+        res
+            .status(201)
+            .json({
             success: true,
             data: id,
-        });
+        })
+            .end();
     }
     catch (error) {
         console.error("Error creating task:", error);
@@ -41,10 +45,13 @@ const getTasks = async (req, res) => {
     try {
         const email = req.user.email;
         const tasks = await Task.find({ email }, { email: 0, _id: 0, createdAt: 0, updatedAt: 0 });
-        res.status(200).json({
+        res
+            .status(200)
+            .json({
             success: true,
             data: tasks,
-        });
+        })
+            .end();
     }
     catch (error) {
         console.error("Error fetching tasks:", error);
@@ -58,16 +65,20 @@ const getTaskById = async (req, res) => {
     try {
         const { id } = req.params;
         const task = await Task.findOne({ id });
-        if (!task) {
+        if (task === null) {
             res.status(404).json({
                 success: false,
                 message: "Task not found",
             });
+            return;
         }
-        res.status(200).json({
+        res
+            .status(200)
+            .json({
             success: true,
             data: task,
-        });
+        })
+            .end();
     }
     catch (error) {
         console.error("Error fetching task:", error);
@@ -94,11 +105,15 @@ const updateTask = async (req, res) => {
                 success: false,
                 message: "Task not found",
             });
+            return;
         }
-        res.status(200).json({
+        res
+            .status(200)
+            .json({
             success: true,
             data: id,
-        });
+        })
+            .end();
     }
     catch (error) {
         console.error("Error updating task:", error);
@@ -117,12 +132,16 @@ const deleteTask = async (req, res) => {
                 success: false,
                 message: "Task not found",
             });
+            return;
         }
-        res.status(200).json({
+        res
+            .status(200)
+            .json({
             success: true,
             message: "Task deleted successfully",
             data: deletedTask,
-        });
+        })
+            .end();
     }
     catch (error) {
         console.error("Error deleting task:", error);

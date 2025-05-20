@@ -10,20 +10,26 @@ const refreshToken = async (req, res, next) => {
         const refreshToken = req.cookies.refreshToken;
         if (!refreshToken) {
             res.status(401).json({ message: "Refresh token not found" });
+            return;
         }
         // Verify the refresh token
         const decoded = jwt.verify(refreshToken, REFRESH_TOKEN_SECRET);
         const user = await User.findOne({ email: decoded.email });
         if (user === null) {
             res.status(403).json({ message: "Invalid refresh token" });
+            return;
         }
+        req.user = decoded;
         const newAccessToken = generateAccessToken({ email: decoded.email });
         setAccessRefreshTokenCookie(res, newAccessToken, "accessToken");
         next();
     }
     catch (error) {
         if (error instanceof jwt.TokenExpiredError) {
-            res.status(401).json({ message: "Refresh token expired" });
+            res
+                .status(401)
+                .json({ message: "Refresh token expired. Please login again" });
+            return;
         }
         console.error("Token refresh error:", error);
         res.status(403).json({ message: "Invalid refresh token" });
@@ -43,9 +49,11 @@ const setAccessRefreshTokenCookie = (res, token, tokenType) => {
     res.cookie(tokenType, token, {
         httpOnly: true,
         secure: true,
-        sameSite: "lax",
+        sameSite: "none",
         maxAge: tokenType === "accessToken" ? 15 * 60 * 1000 : 7 * 24 * 60 * 60 * 1000,
     });
+    const resp = res.getHeader("Set-Cookie");
+    console.log(resp);
 };
 const register = async (req, res) => {
     try {
@@ -53,6 +61,7 @@ const register = async (req, res) => {
         const existingUser = await User.findOne({ email });
         if (existingUser) {
             res.status(409).json({ message: "User with this email already exists" });
+            return;
         }
         const hashedPassword = await bcrypt.hash(password, 12);
         const accessToken = generateAccessToken({ email });
@@ -65,7 +74,9 @@ const register = async (req, res) => {
         await newUser.save();
         setAccessRefreshTokenCookie(res, accessToken, "accessToken");
         setAccessRefreshTokenCookie(res, refreshToken, "refreshToken");
-        res.status(201).json({
+        res
+            .status(201)
+            .json({
             message: "User registered successfully",
             user: {
                 id: newUser._id.toString(),
@@ -73,7 +84,8 @@ const register = async (req, res) => {
                 email: newUser.email,
             },
             accessToken,
-        });
+        })
+            .end();
     }
     catch (error) {
         console.error("Registration error:", error);
@@ -86,26 +98,29 @@ const login = async (req, res) => {
         const user = await User.findOne({ email });
         if (user === null) {
             res.status(401).json({ message: "Invalid credentials" });
+            return;
         }
-        else {
-            const isPasswordValid = await bcrypt.compare(password, user.password);
-            if (!isPasswordValid) {
-                res.status(401).json({ message: "Invalid credentials" });
-            }
-            const accessToken = generateAccessToken({ email: user.email });
-            const refreshToken = generateRefreshToken({ email: user.email });
-            setAccessRefreshTokenCookie(res, accessToken, "accessToken");
-            setAccessRefreshTokenCookie(res, refreshToken, "refreshToken");
-            res.status(200).json({
-                message: "Login successful",
-                user: {
-                    id: user._id.toString(),
-                    username: user.username,
-                    email: user.email,
-                },
-                accessToken,
-            });
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+        if (!isPasswordValid) {
+            res.status(401).json({ message: "Invalid credentials" });
+            return;
         }
+        const accessToken = generateAccessToken({ email: user.email });
+        const refreshToken = generateRefreshToken({ email: user.email });
+        setAccessRefreshTokenCookie(res, accessToken, "accessToken");
+        setAccessRefreshTokenCookie(res, refreshToken, "refreshToken");
+        res
+            .status(200)
+            .json({
+            message: "Login successful",
+            user: {
+                id: user._id.toString(),
+                username: user.username,
+                email: user.email,
+            },
+            accessToken,
+        })
+            .end();
     }
     catch (error) {
         console.error("Login error:", error);
@@ -115,19 +130,13 @@ const login = async (req, res) => {
 const logout = async (req, res) => {
     try {
         const userEmail = req.user?.email;
-        if (!userEmail)
+        if (userEmail === undefined) {
             res.status(404).json({ message: "User not found" });
-        res.clearCookie("accessToken", {
-            httpOnly: true,
-            secure: true,
-            sameSite: "lax",
-        });
-        res.clearCookie("refreshToken", {
-            httpOnly: true,
-            secure: true,
-            sameSite: "lax",
-        });
-        res.status(200).json({ message: "Logout successful" });
+            return;
+        }
+        res.clearCookie("accessToken");
+        res.clearCookie("refreshToken");
+        res.status(200).json({ message: "Logout successful" }).end();
     }
     catch (error) {
         console.error("Logout error:", error);

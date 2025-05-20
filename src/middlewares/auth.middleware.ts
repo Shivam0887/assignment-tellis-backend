@@ -8,22 +8,11 @@ export const authenticateToken = (
   res: Response,
   next: NextFunction
 ) => {
-  const token = req.cookies["accessToken"];
-  if (!token) {
-    res.status(401).json({ message: "Access token required" });
-  }
-
-  try {
-    const decoded = jwt.verify(token, ACCESS_TOKEN_SECRET);
+  const token = req.cookies.accessToken;
+  if (token === null) next();
+  else {
+    const decoded = jwt.verify(token, ACCESS_TOKEN_SECRET) as jwt.JwtPayload;
     (req as any).user = decoded;
-
-    next();
-  } catch (error) {
-    if (error instanceof jwt.TokenExpiredError) {
-      res.status(401).json({ message: "Access token expired" });
-    }
-
-    console.error("Token verification error:", error);
-    res.status(403).json({ message: "Invalid access token" });
+    next("route");
   }
 };

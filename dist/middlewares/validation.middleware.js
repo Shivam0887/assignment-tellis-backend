@@ -44,6 +44,7 @@ export const validateRegister = (req, res, next) => {
             res.status(400).json({
                 message,
             });
+            return;
         }
         res.status(400).json({ message: "Invalid input data" });
     }
@@ -58,8 +59,9 @@ export const validateLogin = (req, res, next) => {
             res.status(400).json({
                 message: "Invalid credientials",
             });
+            return;
         }
-        res.status(400).json({ message: "Invalid input data" });
+        res.status(400).json({ message: "Invalid input data" }).end();
     }
 };
 //# sourceMappingURL=validation.middleware.js.map

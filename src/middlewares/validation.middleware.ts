@@ -58,6 +58,7 @@ export const validateRegister = (
       res.status(400).json({
         message,
       });
+      return;
     }
 
     res.status(400).json({ message: "Invalid input data" });

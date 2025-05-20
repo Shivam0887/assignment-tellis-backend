@@ -33,6 +33,8 @@ const createTask = async (req: Request, res: Response) => {
       email,
     });
 
+    await newTask.save();
+
     res
       .status(201)
       .json({

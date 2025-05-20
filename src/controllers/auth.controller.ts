@@ -12,8 +12,6 @@ const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET!;
 const ACCESS_TOKEN_EXPIRY = "15m";
 const REFRESH_TOKEN_EXPIRY = "7d";
 
-const isProduction = process.env.NODE_ENV === "production";
-
 const refreshToken = async (
   req: Request,
   res: Response,
@@ -40,13 +38,17 @@ const refreshToken = async (
       return;
     }
 
+    (req as any).user = decoded;
+
     const newAccessToken = generateAccessToken({ email: decoded.email });
 
     setAccessRefreshTokenCookie(res, newAccessToken, "accessToken");
     next();
   } catch (error) {
     if (error instanceof jwt.TokenExpiredError) {
-      res.status(401).json({ message: "Refresh token expired" });
+      res
+        .status(401)
+        .json({ message: "Refresh token expired. Please login again" });
       return;
     }
 
@@ -76,9 +78,8 @@ const setAccessRefreshTokenCookie = (
     httpOnly: true,
     secure: true,
     sameSite: "none",
-    path: "/",
-    domain: "assignment-tellis-backend.onrender.com",
-    maxAge: tokenType === "accessToken" ? 15 * 60 * 1000 : 7 * 24 * 60 * 60 * 1000,
+    maxAge:
+      tokenType === "accessToken" ? 15 * 60 * 1000 : 7 * 24 * 60 * 60 * 1000,
   });
 
   const resp = res.getHeader("Set-Cookie");

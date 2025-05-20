@@ -6,11 +6,9 @@ import {
   validateRegister,
 } from "../middlewares/validation.middleware.js";
 import { authenticateToken } from "../middlewares/auth.middleware.js";
-import { getUser } from "../controllers/user.controller.js";
 
 const router = express.Router();
 
-router.get("/", authenticateToken, getUser);
 router.post("/register", validateRegister, register);
 router.post("/login", validateLogin, login);
 router.get("/logout", authenticateToken, logout);
