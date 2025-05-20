@@ -5,24 +5,23 @@ import cors from "cors";
 import router from "./routes/index.js";
 import { errorHandler } from "./middlewares/error-handler.middleware.js";
 import { ConnectToDB } from "./configs/database.js";
-import helmet from "helmet";
 
 const app = express();
 
 ConnectToDB();
 
+app.set("trust proxy", 1);
+
+app.use(cookieParser());
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN || "http://localhost:5173",
-    credentials: true, // Allow cookies in cross-origin requests,
+    origin: process.env.CORS_ORIGIN,
+    credentials: true,
   })
 );
 
-app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-
-app.use(helmet());
 
 app.use("/api", router);
 app.use(errorHandler);

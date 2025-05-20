@@ -74,12 +74,15 @@ const setAccessRefreshTokenCookie = (
 ): void => {
   res.cookie(tokenType, token, {
     httpOnly: true,
-    secure: isProduction,
+    secure: true,
     sameSite: "none",
     path: "/",
-    maxAge:
-      tokenType === "accessToken" ? 15 * 60 * 1000 : 7 * 24 * 60 * 60 * 1000,
+    domain: "assignment-tellis-backend.onrender.com",
+    maxAge: tokenType === "accessToken" ? 15 * 60 * 1000 : 7 * 24 * 60 * 60 * 1000,
   });
+
+  const resp = res.getHeader("Set-Cookie");
+  console.log(resp);
 };
 
 const register = async (req: Request, res: Response) => {
