@@ -172,13 +172,6 @@ const login = async (req: Request, res: Response) => {
 
 const logout = async (req: Request, res: Response) => {
   try {
-    const userEmail = (req as any).user?.email;
-
-    if (userEmail === undefined) {
-      res.status(404).json({ message: "User not found" });
-      return;
-    }
-
     res.clearCookie("accessToken");
     res.clearCookie("refreshToken");
 
