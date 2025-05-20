@@ -75,7 +75,7 @@ const setAccessRefreshTokenCookie = (
   res.cookie(tokenType, token, {
     httpOnly: true,
     secure: isProduction,
-    sameSite: "strict",
+    sameSite: "lax",
     path: "/",
     maxAge:
       tokenType === "accessToken" ? 15 * 60 * 1000 : 7 * 24 * 60 * 60 * 1000,
